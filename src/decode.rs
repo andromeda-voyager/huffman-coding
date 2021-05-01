@@ -1,26 +1,39 @@
 use crate::huffman;
-use std::fs;
-use std::fs::File;
-use std::io::prelude::*;
 
-pub fn decode_file(file_name: &str) {
-    println!("\nDECODE");
-   
+
+pub fn decode(filename: &str) {
     let mut data: &[u8];
-    if let Ok(file_data) = std::fs::read(file_name) {
+    if let Ok(file_data) = std::fs::read(filename) {
         data = &file_data;
         if let Some(max_code_len) = data.first() {
-            println!("max code length {}", max_code_len);
             if data[1..].len() < *max_code_len as usize {
                 return;
             }
             let code_lengths = &data[1..*max_code_len as usize + 1];
             data = &data[*max_code_len as usize + 1..];
             let num_codes: u8 = code_lengths.iter().sum();
-            println!("Number of codes {}", num_codes);
             let symbols = &data[0..num_codes as usize];
+            data = &data[num_codes as usize..];
             let code_book = huffman::rebuild_code_book(code_lengths, symbols);
+
+            let mut code_word = "".to_string();
+            let mut decoded_msg = "".to_string();
+            for block in data.iter() {
+                let mut b = *block;
+                for _ in 0..8 {
+                    if b & 0x80 != 0 { // most significant bit is 1
+                        code_word += "1";
+                    } else {
+                        code_word += "0";
+                    }
+                    if let Some(ch) = code_book.get(&code_word) {
+                        decoded_msg.push(*ch);
+                        code_word = "".to_string();
+                    }
+                    b =  b << 1
+                }
+            }
+            println!("{}", decoded_msg);
         }
     }
-
 }

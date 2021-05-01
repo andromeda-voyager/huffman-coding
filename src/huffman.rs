@@ -25,18 +25,19 @@ fn get_huffman_codes(message: &str) -> Vec<Code> {
     codes
 }
 
-pub fn create_code_book(codes: Vec<Code>) -> HashMap<char, String> {
+pub fn create_code_book(codes: &Vec<Code>) -> HashMap<char, String> {
     let mut code_book: HashMap<char, String> = HashMap::new();
-    for code in codes {
-        code_book.insert(code.char(), code.word);
+    for code in codes.iter() {
+        code_book.insert(code.char(), code.word.clone());
     }
     code_book
 }
 
-pub fn rebuild_code_book(code_lengths: &[u8], symbols: &[u8]) -> HashMap<char, String> {
-    let mut code_book: HashMap<char, String> = HashMap::new();
+pub fn rebuild_code_book(code_lengths: &[u8], symbols: &[u8]) -> HashMap<String, char> {
+    let mut code_book: HashMap<String, char> = HashMap::new();
     let mut lengths: Vec<usize> = Vec::new();
     let mut length = 1;
+ 
     for num in code_lengths.iter() {
         for _ in 0..*num  {
             lengths.push(length);
@@ -44,18 +45,17 @@ pub fn rebuild_code_book(code_lengths: &[u8], symbols: &[u8]) -> HashMap<char, S
         length += 1;
     }
 
-    let mut code_word = "0".to_string();
+    let mut code_word = "".to_string();
     for (i, &symbol) in symbols.iter().enumerate() {
         code_word = next_canonical_code(&code_word, lengths[i]);
-        println!("{} '{}'", code_word, symbol as char);
-        code_book.insert(symbol as char, code_word.clone());
+        code_book.insert(code_word.clone(), symbol as char);
     }
     code_book
 }
 
 pub fn get_canonical_codes(message: &str) -> Vec<Code> {
     let mut codes = get_huffman_codes(message);
-    let mut code_word = "0".to_string();
+    let mut code_word = "".to_string();
     for code in codes.iter_mut() {
         code_word = next_canonical_code(&code_word, code.len() as usize);
         code.word = code_word.clone();
@@ -64,7 +64,7 @@ pub fn get_canonical_codes(message: &str) -> Vec<Code> {
 }
 
 fn next_canonical_code(prev_code: &str, len_next: usize) -> String {
-    if prev_code == "0" {
+    if prev_code == "" {
         return "0".repeat(len_next);
     }
 
@@ -104,10 +104,6 @@ pub struct Code {
 impl Code {
     pub fn len(&self) -> u8 {
         self.length
-    }
-
-    pub fn word(&self) -> &str {
-        &self.word
     }
 
     pub fn char(&self) -> char {
